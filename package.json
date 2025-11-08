@@ -1,0 +1,8 @@
+{
+  "name": "capi-project",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "facebook-business-sdk": "^19.0.0"
+  }
+}
