@@ -106,22 +106,23 @@
 
     if (whatsappButton) {
       whatsappButton.addEventListener('click', () => {
-        const waNumber = '5492236735372';
-        const waMessage = encodeURIComponent('Hola, quiero más información');
-        const whatsappUrl = `https://wa.me/${waNumber}?text=${waMessage}`;
-
-        // Se activa el evento 'Contact' del Pixel al hacer clic
+        
+        // 1. DISPARAMOS EL PIXEL (igual que antes)
         if (typeof fbq !== 'undefined') {
           fbq('track', 'Contact');
         }
-
-        window.open(whatsappUrl, '_blank');
+        
+        // 2. REDIRIGIMOS AL ROTADOR (la nueva parte)
+        // Esto soluciona el problema del caché añadiendo la fecha actual
+        // Asegúrate de usar las comillas invertidas ` `
+        window.location.href = `/api/rotador?t=${Date.now()}`;
       });
     }
   });
 </script>
 </body>
 </html>
+
 
 
 
