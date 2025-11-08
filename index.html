@@ -100,27 +100,28 @@
     </div>
   </div>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const whatsappButton = document.getElementById('whatsappButton');
+ <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const whatsappButton = document.getElementById('whatsappButton');
 
-      if (whatsappButton) {
-        whatsappButton.addEventListener('click', () => {
-          const waNumber = '5492236735372';
-          const waMessage = encodeURIComponent('Hola, quiero más información');
-          const whatsappUrl = `https://wa.me/${waNumber}?text=${waMessage}`;
-          
-          // Se activa el evento 'Contact' del Pixel al hacer clic
-          if (typeof fbq !== 'undefined') {
-            fbq('track', 'Contact');
-          }
-          
-          window.open(whatsappUrl, '_blank');
-        });
-      }
-    });
-  </script>
+    if (whatsappButton) {
+      whatsappButton.addEventListener('click', () => {
+        const waNumber = '5492236735372';
+        const waMessage = encodeURIComponent('Hola, quiero más información');
+        const whatsappUrl = `https://wa.me/${waNumber}?text=${waMessage}`;
+
+        // Se activa el evento 'Contact' del Pixel al hacer clic
+        if (typeof fbq !== 'undefined') {
+          fbq('track', 'Contact');
+        }
+
+        window.open(whatsappUrl, '_blank');
+      });
+    }
+  });
+</script>
 </body>
 </html>
+
 
 
