@@ -1,8 +1,9 @@
-// Importar la librería (NUEVA FORMA DE IMPORTAR)
-import facebookNodejsBusinessSdk from 'facebook-nodejs-business-sdk';
+// Importar la librería (NUEVA FORMA DE IMPORTAR - LA DEFINITIVA)
+import * as facebookNodejsBusinessSdk from 'facebook-nodejs-business-sdk';
 import crypto from 'crypto'; // Librería de encriptación (ya viene con Vercel)
 
 // Acceder a las clases desde el import
+// Este `import *` soluciona el error 'Cannot destructure'
 const { FacebookAdsApi, ServerEvent, UserData } = facebookNodejsBusinessSdk;
 
 // --- Configuración de la API (Tus secretos) ---
@@ -44,7 +45,7 @@ export default async function handler(request, response) {
             value: monto,
             currency: 'ARS',
         })
-        // Asegúrate que esta sea tu URL de Vercel (landingconvertix o sinoca300)
+        // Asegúrate que esta sea tu URL de Vercel
         .setEventSourceUrl('https://landingconvertix.vercel.app'); 
 
     // 6. Enviar el evento
@@ -53,6 +54,7 @@ export default async function handler(request, response) {
     response.status(200).json({ success: true, message: 'Evento de compra enviado a Meta.' });
 
   } catch (err) {
+    // En caso de error, responder al admin.html con el detalle
     console.error('Error al enviar evento a Meta:', err);
     response.status(500).json({ error: `Error del servidor: ${err.message}` });
   }
