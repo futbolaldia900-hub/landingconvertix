@@ -1,19 +1,14 @@
-// CÓDIGO FINAL Y ESTABLE PARA SERVERLESS DE VERCEL (CAPI)
-
-// 1. Importar la librería de forma directa
 const bizSdk = require('facebook-nodejs-business-sdk');
 const crypto = require('crypto');
 
-// 2. Acceder a las clases de Meta (Asignación directa para evitar errores de importación)
-const FacebookAdsApi = bizSdk.FacebookAdsApi;
-const ServerEvent = bizSdk.ServerEvent;
-const UserData = bizSdk.UserData;
+// 2. Acceder a las clases de Meta (Directamente desde la variable bizSdk)
+const { FacebookAdsApi, ServerEvent, UserData } = bizSdk;
 
-// --- Configuración de la API ---
+// --- Configuración de la API (Tus secretos) ---
 const ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
 const PIXEL_ID = '1946841772846486'; // Tu ID de Píxel
 
-// Función para "hashear" (encriptar) el teléfono
+// Función para "hashear" (encriptar) los datos como pide Meta
 function hashData(data) {
   // Aseguramos que quitamos el '+' antes de hashear el teléfono.
   let cleanedData = data.startsWith('+') ? data.substring(1) : data;
@@ -30,7 +25,7 @@ module.exports = async (request, response) => {
   try {
     const { telefono, monto } = request.body;
 
-    // Validación: El teléfono debe empezar con '+'
+    // Validación: El teléfono debe empezar con '+' para asegurar formato internacional
     if (!telefono || !monto || !telefono.startsWith('+')) {
       return response.status(400).json({ error: 'Datos inválidos. Se requiere teléfono (con +) y monto.' });
     }
@@ -52,18 +47,21 @@ module.exports = async (request, response) => {
             value: monto,
             currency: 'ARS',
         })
-        // Tu URL de Vercel
+        // Asegúrate que esta sea tu URL de Vercel (landingconvertix o sinoca300)
         .setEventSourceUrl('https://landingconvertix.vercel.app'); 
 
     // 6. Enviar el evento
     await FacebookAdsApi.sendEvent(PIXEL_ID, [serverEvent]);
 
     // Éxito: Enviar respuesta HTTP 200 y el JSON que el frontend espera
-    response.status(200).json({ success: true, message: '¡Éxito! Conversión enviada a Meta.' });
+    response.status(200).json({ success: true, message: 'Evento de compra enviado a Meta.' });
 
   } catch (err) {
-    // Si hay un error, lo registramos en Vercel Logs y enviamos el detalle
+    // Si hay un error, registramos el detalle y enviamos un error 500
     console.error('Error FATAL al enviar evento a Meta:', err);
+    // Este error 500 es el que debe aparecer en Vercel Logs.
     response.status(500).json({ error: `Error del servidor: La conexión con Meta falló. Causa: ${err.message}` });
   }
 };
+
+**Si el error persiste, el problema es el token.**
