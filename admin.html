@@ -1,118 +1,51 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Admin - Enviar Pago</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: grid; place-items: center; min-height: 100vh; background: #222; color: white; }
-        main { display: none; background: #333; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
-        h1 { margin-top: 0; text-align: center; }
-        div { margin-bottom: 1rem; }
-        label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
-        input { width: 300px; padding: 0.75rem; font-size: 1rem; border-radius: 4px; border: 1px solid #555; background: #444; color: white; }
-        input::placeholder { color: #999; }
-        button { width: 100%; padding: 0.75rem; font-size: 1rem; border: none; border-radius: 4px; background: #007bff; color: white; font-weight: 700; cursor: pointer; }
-        button:disabled { background: #555; }
-        #status { margin-top: 1rem; text-align: center; font-weight: 600; }
-        .success { color: #28a745; }
-        .error { color: #dc3545; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de Ventas (Meta CAPI Argentina)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 40px; background: #fafafa; }
+    h1 { color: #222; }
+    input, button {
+      display: block;
+      margin: 12px 0;
+      padding: 10px;
+      width: 100%;
+      max-width: 320px;
+      font-size: 16px;
+    }
+    button {
+      background-color: #1877f2;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover { background-color: #145dbf; }
+    pre { background: #eee; padding: 12px; border-radius: 8px; max-width: 500px; overflow-x: auto; }
+  </style>
 </head>
 <body>
+  <h1>Registrar Compra (Meta Pixel ARS)</h1>
 
-    <main id="panel">
-        <h1>Enviar Pago a Meta</h1>
-        <form id="paymentForm">
-            <div>
-                <label for="telefono">Teléfono del Cliente (con +54)</label>
-                <input type="tel" id="telefono" placeholder="+5492231234567" required>
-            </div>
-            <div>
-                <label for="monto">Monto Pagado (solo números)</label>
-                <input type="number" id="monto" placeholder="1000" required>
-            </div>
-            <button type="submit" id="submitButton">Enviar Conversión</button>
-        </form>
-        <div id="status"></div>
-    </main>
+  <form id="purchaseForm">
+    <label>Teléfono del comprador (sin +54 ni 0):</label>
+    <input type="text" id="phone" placeholder="Ej: 1122334455" required />
 
-    <script>
-        // --- ¡CONFIGURACIÓN DE SEGURIDAD! ---
-        // Cambia esta contraseña por una que solo tú sepas
-        const ADMIN_PASSWORD = "45864722";
-        // ------------------------------------
+    <label>Monto (ARS, sin puntos ni comas):</label>
+    <input type="number" id="amount" placeholder="Ej: 26000" required />
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const panel = document.getElementById('panel');
-            const form = document.getElementById('paymentForm');
-            const statusEl = document.getElementById('status');
-            const submitButton = document.getElementById('submitButton');
+    <button type="submit">Enviar a Meta</button>
+  </form>
 
-            // 1. Pedir contraseña al cargar la página
-            const pass = prompt('Por favor, ingresa la contraseña de administrador:');
-            if (pass !== ADMIN_PASSWORD) {
-                alert('Contraseña incorrecta.');
-                document.body.innerHTML = '<h1>Acceso Denegado</h1>';
-                return;
-            }
+  <pre id="result"></pre>
 
-            // Si la contraseña es correcta, mostrar el panel
-            panel.style.display = 'block';
+  <script>
+    const form = document.getElementById("purchaseForm");
+    const result = document.getElementById("result");
 
-            // 2. Manejar el envío del formulario
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault(); // Evitar que la página se recargue
-
-                const telefono = document.getElementById('telefono').value;
-                const monto = document.getElementById('monto').value;
-
-                // Validar teléfono (simple)
-                if (!telefono.startsWith('+')) {
-                    statusEl.textContent = 'Error: El teléfono debe empezar con + (ej. +549...).';
-                    statusEl.className = 'error';
-                    return;
-                }
-
-                // Desactivar botón y mostrar carga
-                submitButton.disabled = true;
-                submitButton.textContent = 'Enviando...';
-                statusEl.textContent = '';
-                statusEl.className = '';
-
-                try {
-                    // 3. Enviar datos a nuestra API (que crearemos en el Paso 4)
-                    const response = await fetch('/api/enviar-pago.cjs', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ telefono, monto: Number(monto) }),
-                    });
-
-                    const result = await response.json();
-
-                    if (!response.ok) {
-                        // Si la API devuelve un error
-                        throw new Error(result.error || 'Error desconocido');
-                    }
-
-                    // ¡Éxito!
-                    statusEl.textContent = '¡Éxito! Conversión enviada a Meta.';
-                    statusEl.className = 'success';
-                    form.reset(); // Limpiar el formulario
-
-                } catch (err) {
-                    // Mostrar error
-                    statusEl.textContent = `Error al enviar: ${err.message}`;
-                    statusEl.className = 'error';
-                } finally {
-                    // Volver a activar el botón
-                    submitButton.disabled = false;
-                    submitButton.textContent = 'Enviar Conversión';
-                }
-            });
-        });
-    </script>
-</body>
-</html>
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const phone = document.getElementById("phone").value;
+      const amount = document.getElementById("amount
