@@ -6,7 +6,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: "Método no permitido" });
   }
 
-  const { phone, email, amount, event_id } = req.body;
+  const { phone, email, amount, event_time, event_id } = req.body;
 
   if (!amount || (!phone && !email)) {
     return res.status(400).json({ message: "Faltan datos (teléfono o monto)" });
@@ -14,6 +14,10 @@ export default async function handler(req, res) {
 
   const PIXEL_ID = process.env.META_PIXEL_ID;
   const ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
+
+  if (!PIXEL_ID || !ACCESS_TOKEN) {
+    return res.status(500).json({ message: "Variables de entorno no configuradas" });
+  }
 
   try {
     const hashedPhone = phone
@@ -27,15 +31,17 @@ export default async function handler(req, res) {
       data: [
         {
           event_name: "Purchase",
-          event_time: Math.floor(Date.now() / 1000),
+          event_time: event_time
+            ? Math.floor(new Date(event_time).getTime() / 1000)
+            : Math.floor(Date.now() / 1000), // usa la fecha elegida o ahora
           event_id: event_id || `manual_${Date.now()}`,
           user_data: {
             ph: hashedPhone ? [hashedPhone] : [],
             em: hashedEmail ? [hashedEmail] : [],
           },
           custom_data: {
-            currency: "ARS", // 👈 Ahora en pesos argentinos
-            value: parseFloat(amount), // Meta entiende el número como 26000 ARS
+            currency: "ARS",
+            value: parseFloat(amount),
           },
           action_source: "website",
         },
