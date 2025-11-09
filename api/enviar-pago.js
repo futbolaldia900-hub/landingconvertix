@@ -1,5 +1,5 @@
 // Importar las librerías necesarias
-import { FacebookAdsApi, ServerEvent, UserData } from 'facebook-business-sdk';
+import { FacebookAdsApi, ServerEvent, UserData } from 'facebook-nodejs-business-sdk';
 import crypto from 'crypto'; // Librería de encriptación (ya viene con Vercel)
 
 // --- Configuración de la API (Tus secretos) ---
