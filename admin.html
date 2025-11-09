@@ -82,7 +82,7 @@
 
                 try {
                     // 3. Enviar datos a nuestra API (que crearemos en el Paso 4)
-                    const response = await fetch('/api/enviar-pago', {
+                    const response = await fetch('/api/enviar-pago.cjs', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
