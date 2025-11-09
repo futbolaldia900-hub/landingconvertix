@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "api/rotador.js": {
+      "runtime": "nodejs20.x"
+    },
+    "api/enviar-pago.cjs": {
+      "runtime": "nodejs20.x"
+    }
+  }
+}
