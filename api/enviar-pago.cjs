@@ -1,67 +1,95 @@
-const bizSdk = require('facebook-nodejs-business-sdk');
+const https = require('https');
 const crypto = require('crypto');
 
-// 2. Acceder a las clases de Meta (Directamente desde la variable bizSdk)
-const { FacebookAdsApi, ServerEvent, UserData } = bizSdk;
-
-// --- Configuración de la API (Tus secretos) ---
+// --- Configuración de la API ---
 const ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
-const PIXEL_ID = '1946841772846486'; // Tu ID de Píxel
+const PIXEL_ID = '1946841772846486';
+const META_API_URL = 'graph.facebook.com';
+const META_API_VERSION = 'v18.0';
 
-// Función para "hashear" (encriptar) los datos como pide Meta
+// Función para "hashear" (encriptar) el teléfono
 function hashData(data) {
-  // Aseguramos que quitamos el '+' antes de hashear el teléfono.
-  let cleanedData = data.startsWith('+') ? data.substring(1) : data;
-  return crypto.createHash('sha256').update(cleanedData).digest('hex');
+    let cleanedData = data.startsWith('+') ? data.substring(1) : data;
+    return crypto.createHash('sha256').update(cleanedData).digest('hex');
 }
 
 // --- El Cerebro de la API ---
 module.exports = async (request, response) => {
-
-  if (request.method !== 'POST') {
-    return response.status(405).json({ error: 'Método no permitido. Solo POST.' });
-  }
-
-  try {
-    const { telefono, monto } = request.body;
-
-    // Validación: El teléfono debe empezar con '+' para asegurar formato internacional
-    if (!telefono || !monto || !telefono.startsWith('+')) {
-      return response.status(400).json({ error: 'Datos inválidos. Se requiere teléfono (con +) y monto.' });
+    if (request.method !== 'POST') {
+        return response.status(405).json({ error: 'Método no permitido. Solo POST.' });
     }
 
-    // 3. Inicializar la API de Meta
-    FacebookAdsApi.init(ACCESS_TOKEN);
+    try {
+        const { telefono, monto } = request.body;
 
-    // 4. Crear los datos del usuario (¡Hasheado!)
-    const userData = new UserData()
-        .setPhone(hashData(telefono)); 
+        if (!telefono || !monto || !telefono.startsWith('+')) {
+            return response.status(400).json({ error: 'Datos inválidos. Se requiere teléfono (con +) y monto.' });
+        }
+        
+        // 1. Construir los datos del evento (payload)
+        const currentTimestamp = Math.floor(Date.now() / 1000);
+        
+        const eventData = {
+            event_name: 'Purchase',
+            event_time: currentTimestamp,
+            user_data: {
+                ph: [hashData(telefono)], // Enviar el teléfono hasheado
+            },
+            custom_data: {
+                value: monto,
+                currency: 'ARS',
+            },
+            // Datos necesarios para la atribución
+            event_source_url: 'https://landingconvertix.vercel.app',
+            action_source: 'website',
+        };
+        
+        const payload = JSON.stringify({
+            data: [eventData],
+            access_token: ACCESS_TOKEN // Usar el token directamente
+        });
 
-    const currentTimestamp = Math.floor(Date.now() / 1000);
+        // 2. Opciones de la petición HTTPs
+        const options = {
+            hostname: META_API_URL,
+            port: 443,
+            path: `/${META_API_VERSION}/${PIXEL_ID}/events`,
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': payload.length,
+            },
+        };
 
-    const serverEvent = new ServerEvent()
-        .setEventName('Purchase')
-        .setEventTime(currentTimestamp)
-        .setUserData(userData)
-        .setCustomData({
-            value: monto,
-            currency: 'ARS',
-        })
-        // Asegúrate que esta sea tu URL de Vercel (landingconvertix o sinoca300)
-        .setEventSourceUrl('https://landingconvertix.vercel.app'); 
+        // 3. Enviar la petición a Meta y esperar la respuesta
+        const metaResponse = await new Promise((resolve, reject) => {
+            const req = https.request(options, res => {
+                let data = '';
+                res.on('data', chunk => data += chunk);
+                res.on('end', () => resolve({ statusCode: res.statusCode, data }));
+            });
 
-    // 6. Enviar el evento
-    await FacebookAdsApi.sendEvent(PIXEL_ID, [serverEvent]);
+            req.on('error', reject);
+            req.write(payload);
+            req.end();
+        });
 
-    // Éxito: Enviar respuesta HTTP 200 y el JSON que el frontend espera
-    response.status(200).json({ success: true, message: 'Evento de compra enviado a Meta.' });
+        const metaResult = JSON.parse(metaResponse.data);
 
-  } catch (err) {
-    // Si hay un error, registramos el detalle y enviamos un error 500
-    console.error('Error FATAL al enviar evento a Meta:', err);
-    // Este error 500 es el que debe aparecer en Vercel Logs.
-    response.status(500).json({ error: `Error del servidor: La conexión con Meta falló. Causa: ${err.message}` });
-  }
+        // 4. Verificar la respuesta de Meta
+        if (metaResponse.statusCode !== 200 || metaResult.error) {
+             console.error('Meta API Error:', metaResult);
+             return response.status(500).json({ 
+                 error: `Error de la API de Meta. Causa: ${metaResult.error_user_title || metaResult.error.message || 'Error de token/permiso.'}` 
+             });
+        }
+        
+        // Éxito: Enviar respuesta HTTP 200 al frontend
+        response.status(200).json({ success: true, message: '¡Éxito! Conversión enviada a Meta.' });
+
+    } catch (err) {
+        // En caso de error general, como fallo de red
+        console.error('Error FATAL del servidor:', err);
+        response.status(500).json({ error: `Error del servidor: ${err.message}` });
+    }
 };
-
-**Si el error persiste, el problema es el token.**
