@@ -3,49 +3,55 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel de Ventas (Meta CAPI Argentina)</title>
+  <title>Panel de Ventas - Meta CAPI</title>
   <style>
-    body { font-family: system-ui, sans-serif; padding: 40px; background: #fafafa; }
-    h1 { color: #222; }
-    input, button {
-      display: block;
-      margin: 12px 0;
-      padding: 10px;
-      width: 100%;
-      max-width: 320px;
-      font-size: 16px;
-    }
-    button {
-      background-color: #1877f2;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    button:hover { background-color: #145dbf; }
-    pre { background: #eee; padding: 12px; border-radius: 8px; max-width: 500px; overflow-x: auto; }
+    body { font-family: Arial, sans-serif; margin: 40px; background: #fafafa; color: #333; }
+    h1 { color: #111; }
+    form { max-width: 400px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    input, button { width: 100%; padding: 10px; margin-top: 10px; font-size: 1rem; }
+    button { background: #1877f2; color: white; border: none; border-radius: 8px; cursor: pointer; }
+    button:hover { background: #0e63d0; }
+    #result { white-space: pre-wrap; background: #f4f4f4; padding: 10px; margin-top: 20px; border-radius: 8px; }
   </style>
 </head>
 <body>
-  <h1>Registrar Compra (Meta Pixel ARS)</h1>
+  <h1>Registrar Compra (Meta CAPI)</h1>
 
   <form id="purchaseForm">
-    <label>Teléfono del comprador (sin +54 ni 0):</label>
-    <input type="text" id="phone" placeholder="Ej: 1122334455" required />
-
-    <label>Monto (ARS, sin puntos ni comas):</label>
-    <input type="number" id="amount" placeholder="Ej: 26000" required />
-
-    <button type="submit">Enviar a Meta</button>
+    <input type="text" id="phone" placeholder="Teléfono del comprador (ej: 1122334455)" />
+    <input type="email" id="email" placeholder="Email del comprador (opcional)" />
+    <input type="number" id="amount" placeholder="Monto en ARS (ej: 26000)" required />
+    <button type="submit">Enviar compra a Meta</button>
   </form>
 
-  <pre id="result"></pre>
+  <div id="result"></div>
 
   <script>
     const form = document.getElementById("purchaseForm");
-    const result = document.getElementById("result");
-
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const phone = document.getElementById("phone").value;
-      const amount = document.getElementById("amount
+      const email = document.getElementById("email").value;
+      const amount = document.getElementById("amount").value;
+
+      if (!amount || (!phone && !email)) {
+        alert("Debes ingresar al menos teléfono o email, y el monto en ARS.");
+        return;
+      }
+
+      const res = await fetch("/api/meta-purchase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, email, amount }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById("result").innerHTML = "✅ Enviado correctamente a Meta<br>" + JSON.stringify(data.metaResponse, null, 2);
+      } else {
+        document.getElementById("result").innerHTML = "❌ Error al enviar<br>" + JSON.stringify(data, null, 2);
+      }
+    });
+  </script>
+</body>
+</html>
