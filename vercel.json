@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "installCommand": "npm install",
+  "functions": {
+    "api/rotador.js": {
+      "runtime": "nodejs22.x"
+    },
+    "api/enviar-pago.cjs": {
+      "runtime": "nodejs22.x"
+    }
+  }
+}
