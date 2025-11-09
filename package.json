@@ -1,8 +1,8 @@
 {
-  "name": "capi-project-fix",
+  "name": "capi-project-fix-latest",
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "facebook-business-sdk": "19.0.0"
+    "facebook-business-sdk": "latest"
   }
 }
