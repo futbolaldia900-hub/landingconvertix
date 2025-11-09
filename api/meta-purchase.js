@@ -1,3 +1,4 @@
+// /api/meta-purchase.js
 import crypto from "crypto";
 
 export default async function handler(req, res) {
@@ -5,9 +6,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: "Método no permitido" });
   }
 
-  const { phone, amount } = req.body;
+  const { phone, email, amount, event_id } = req.body;
 
-  if (!phone || !amount) {
+  if (!amount || (!phone && !email)) {
     return res.status(400).json({ message: "Faltan datos (teléfono o monto)" });
   }
 
@@ -15,25 +16,26 @@ export default async function handler(req, res) {
   const ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
 
   try {
-    // Convertir teléfono y hashearlo (como Meta pide)
-    const hashedPhone = crypto
-      .createHash("sha256")
-      .update(phone.trim().replace(/\s+/g, ""))
-      .digest("hex");
+    const hashedPhone = phone
+      ? crypto.createHash("sha256").update(phone.trim()).digest("hex")
+      : null;
+    const hashedEmail = email
+      ? crypto.createHash("sha256").update(email.trim().toLowerCase()).digest("hex")
+      : null;
 
-    // Armar payload para Meta
     const payload = {
       data: [
         {
           event_name: "Purchase",
           event_time: Math.floor(Date.now() / 1000),
-          event_id: `manual_${Date.now()}`,
+          event_id: event_id || `manual_${Date.now()}`,
           user_data: {
-            ph: [hashedPhone],
+            ph: hashedPhone ? [hashedPhone] : [],
+            em: hashedEmail ? [hashedEmail] : [],
           },
           custom_data: {
-            currency: "ARS", // ✅ Pesos Argentinos
-            value: parseFloat(amount), // Ej: 26000
+            currency: "ARS", // 👈 Ahora en pesos argentinos
+            value: parseFloat(amount), // Meta entiende el número como 26000 ARS
           },
           action_source: "website",
         },
@@ -50,7 +52,6 @@ export default async function handler(req, res) {
     );
 
     const data = await response.json();
-
     return res.status(200).json({ success: true, metaResponse: data });
   } catch (error) {
     console.error(error);
