@@ -115,13 +115,14 @@
         // 2. REDIRIGIMOS AL ROTADOR (la nueva parte)
         // Esto soluciona el problema del caché añadiendo la fecha actual
         // Asegúrate de usar las comillas invertidas ` `
-        window.location.href = `/api/rotador?t=${Date.now()}`;
+        window.location.href = `/api/rotador.cjs?t=${Date.now()}`;
       });
     }
   });
 </script>
 </body>
 </html>
+
 
 
 
