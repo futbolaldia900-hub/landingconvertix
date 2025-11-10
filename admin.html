@@ -8,52 +8,57 @@
 <body style="font-family:Arial; margin:40px;">
   <h2>Registrar compra manual</h2>
 
-  <label>Click ID:</label><br/>
-  <input id="click_id" placeholder="Ej: SD6EK" style="width:200px;"/><br/><br/>
+  <label>Click ID (código corto):</label><br/>
+  <input id="click_id" placeholder="Ej: A3F9KQ" style="width:250px;"/><br/><br/>
 
   <label>Teléfono del comprador (sin +):</label><br/>
-  <input id="phone" placeholder="549XXXXXXXXXX" style="width:200px;"/><br/><br/>
+  <input id="phone" placeholder="549XXXXXXXXXX" style="width:250px;"/><br/><br/>
 
   <label>Monto (ARS):</label><br/>
-  <input id="value" placeholder="Ej: 3000" style="width:200px;"/><br/><br/>
+  <input id="value" placeholder="Ej: 3000" style="width:250px;"/><br/><br/>
 
-  <button id="send" style="padding:10px 20px;">Enviar a Meta</button>
+  <label>FBP:</label><br/>
+  <input id="fbp" placeholder="fb.2.xxxxx..." style="width:400px;"/><br/><br/>
 
-  <p id="status"></p>
+  <label>FBC:</label><br/>
+  <input id="fbc" placeholder="fb.1.xxxxx..." style="width:400px;"/><br/><br/>
+
+  <label>Event ID:</label><br/>
+  <input id="event_id" placeholder="contact-XXXXXX" style="width:400px;"/><br/><br/>
+
+  <button id="send" style="padding:10px 25px;">Enviar a Meta</button>
+
+  <p id="status" style="margin-top:20px; font-weight:bold;"></p>
 
   <script>
-    // 🔑 CONFIGURACIÓN BÁSICA
-    const ACCESS_TOKEN = "TU_TOKEN_DE_ACCESO_DE_META"; // reemplazá con tu token real
+    // 🔧 CONFIGURACIÓN
+    const ACCESS_TOKEN = "TU_TOKEN_DE_ACCESO_DE_META"; // <-- reemplazá con tu token válido
     const PIXEL_ID = "1946841772846486";
-
-    // 🧠 MODO MANUAL DE PRUEBA
-    // Copiá estos valores desde tu Google Sheet para cada test
-    const fbp = "fb.2.1762644068517.778233856327572830"; // valor tomado del sheet
-    const fbc = ""; // si en el sheet aparece vacío, dejalo así
-    const event_id = "contact-SD6EK"; // valor tomado del sheet
 
     document.getElementById("send").addEventListener("click", async () => {
       const click_id = document.getElementById("click_id").value.trim();
       const phone = document.getElementById("phone").value.trim();
       const value = parseFloat(document.getElementById("value").value.trim());
+      const fbp = document.getElementById("fbp").value.trim();
+      const fbc = document.getElementById("fbc").value.trim();
+      const event_id = document.getElementById("event_id").value.trim();
       const status = document.getElementById("status");
 
-      if (!click_id || !phone || !value) {
-        status.textContent = "⚠️ Completa todos los campos.";
+      if (!click_id || !phone || !value || !fbp || !fbc || !event_id) {
+        status.textContent = "⚠️ Por favor completá todos los campos.";
         return;
       }
 
-      status.textContent = "Enviando datos a Meta...";
+      status.textContent = "⏳ Enviando evento a Meta...";
 
       try {
-        // 📦 Construir payload
         const payload = {
           data: [{
             event_name: "Purchase",
             event_time: Math.floor(Date.now() / 1000),
-            event_id: event_id, // el mismo que guardaste desde el click
+            event_id: event_id,
             user_data: {
-              ph: phone,
+              ph: phone,  // se puede hashear en una versión avanzada
               fbp: fbp,
               fbc: fbc
             },
@@ -64,21 +69,21 @@
           }]
         };
 
-        // 🚀 Enviar a Meta CAPI
-        const response = await fetch(`https://graph.facebook.com/v18.0/${PIXEL_ID}/events?access_token=${ACCESS_TOKEN}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
+        const response = await fetch(
+          `https://graph.facebook.com/v18.0/${PIXEL_ID}/events?access_token=${ACCESS_TOKEN}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          }
+        );
 
         const json = await response.json();
-
         if (json.events_received) {
           status.textContent = "✅ Compra registrada correctamente en Meta.";
         } else {
           status.textContent = "⚠️ Error al enviar a Meta: " + JSON.stringify(json);
         }
-
       } catch (err) {
         status.textContent = "❌ Error: " + err.message;
       }
