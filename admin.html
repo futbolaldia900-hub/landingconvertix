@@ -4,79 +4,129 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Panel Admin - Registrar Compras</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: "Poppins", Arial, sans-serif;
+      margin: 40px;
+    }
+    h2 {
+      color: #00ff88;
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: bold;
+    }
+    input {
+      width: 250px;
+      padding: 8px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      border: 1px solid #555;
+      border-radius: 6px;
+      background-color: #111;
+      color: #fff;
+    }
+    button {
+      background-color: #00ff88;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background-color: #00cc6f;
+    }
+    #status {
+      margin-top: 20px;
+      font-size: 1rem;
+    }
+    .form-section {
+      margin-bottom: 25px;
+    }
+  </style>
 </head>
-<body style="font-family:Arial; margin:40px;">
-  <h2>Registrar compra manual</h2>
+<body>
+  <h2>🧾 Registrar compra manual</h2>
 
-  <label>Click ID (código corto):</label><br/>
-  <input id="click_id" placeholder="Ej: A3F9KQ" style="width:250px;"/><br/><br/>
+  <div class="form-section">
+    <label>Click ID:</label><br/>
+    <input id="click_id" placeholder="Ej: A3F9KQ" /><br/>
 
-  <label>Teléfono del comprador (sin +):</label><br/>
-  <input id="phone" placeholder="549XXXXXXXXXX" style="width:250px;"/><br/><br/>
+    <label>Nombre y Apellido:</label><br/>
+    <input id="name" placeholder="Ej: Juan Pérez" /><br/>
 
-  <label>Monto (ARS):</label><br/>
-  <input id="value" placeholder="Ej: 3000" style="width:250px;"/><br/><br/>
+    <label>Teléfono (sin +):</label><br/>
+    <input id="phone" placeholder="549XXXXXXXXXX" /><br/>
 
-  <label>FBP:</label><br/>
-  <input id="fbp" placeholder="fb.2.xxxxx..." style="width:400px;"/><br/><br/>
+    <label>Monto (ARS):</label><br/>
+    <input id="value" placeholder="Ej: 3000" /><br/>
+  </div>
 
-  <label>FBC:</label><br/>
-  <input id="fbc" placeholder="fb.1.xxxxx..." style="width:400px;"/><br/><br/>
+  <div class="form-section">
+    <label>FBP:</label><br/>
+    <input id="fbp" placeholder="Ej: fb.1.1731269872.1234567890" /><br/>
 
-  <label>Event ID:</label><br/>
-  <input id="event_id" placeholder="contact-XXXXXX" style="width:400px;"/><br/><br/>
+    <label>FBC:</label><br/>
+    <input id="fbc" placeholder="Ej: fb.1.1731269872.TEST123" /><br/>
 
-  <button id="send" style="padding:10px 25px;">Enviar a Meta</button>
+    <label>Event ID:</label><br/>
+    <input id="event_id" placeholder="Ej: contact-AB123" /><br/>
+  </div>
 
-  <p id="status" style="margin-top:20px; font-weight:bold;"></p>
+  <button id="send">Enviar a Meta</button>
+  <p id="status"></p>
 
   <script>
-    // 🔧 CONFIGURACIÓN
-    const ACCESS_TOKEN = "TU_TOKEN_DE_ACCESO_DE_META"; // <-- reemplazá con tu token válido
+    const ACCESS_TOKEN = "TU_TOKEN_DE_ACCESO_DE_META"; // 🔒 tu token de acceso válido
     const PIXEL_ID = "1946841772846486";
 
-    document.getElementById("send").addEventListener("click", async () => {
-      const click_id = document.getElementById("click_id").value.trim();
-      const phone = document.getElementById("phone").value.trim();
-      const value = parseFloat(document.getElementById("value").value.trim());
-      const fbp = document.getElementById("fbp").value.trim();
-      const fbc = document.getElementById("fbc").value.trim();
-      const event_id = document.getElementById("event_id").value.trim();
-      const status = document.getElementById("status");
+    document.getElementById('send').addEventListener('click', async () => {
+      const click_id = document.getElementById('click_id').value.trim();
+      const name = document.getElementById('name').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const value = parseFloat(document.getElementById('value').value.trim());
+      const fbp = document.getElementById('fbp').value.trim();
+      const fbc = document.getElementById('fbc').value.trim();
+      const event_id = document.getElementById('event_id').value.trim();
+      const status = document.getElementById('status');
 
-      if (!click_id || !phone || !value || !fbp || !fbc || !event_id) {
-        status.textContent = "⚠️ Por favor completá todos los campos.";
+      if (!click_id || !name || !phone || !value || !fbp || !event_id) {
+        status.textContent = "⚠️ Completa todos los campos obligatorios.";
         return;
       }
 
-      status.textContent = "⏳ Enviando evento a Meta...";
+      const payload = {
+        data: [{
+          event_name: "Purchase",
+          event_time: Math.floor(Date.now() / 1000),
+          event_id: event_id,
+          user_data: {
+            ph: phone,
+            fn: name.split(" ")[0] || "",
+            ln: name.split(" ")[1] || "",
+            fbp: fbp,
+            fbc: fbc || ""
+          },
+          custom_data: {
+            value: value,
+            currency: "ARS"
+          }
+        }]
+      };
+
+      status.textContent = "⏳ Enviando datos a Meta...";
 
       try {
-        const payload = {
-          data: [{
-            event_name: "Purchase",
-            event_time: Math.floor(Date.now() / 1000),
-            event_id: event_id,
-            user_data: {
-              ph: phone,  // se puede hashear en una versión avanzada
-              fbp: fbp,
-              fbc: fbc
-            },
-            custom_data: {
-              value: value,
-              currency: "ARS"
-            }
-          }]
-        };
-
-        const response = await fetch(
-          `https://graph.facebook.com/v18.0/${PIXEL_ID}/events?access_token=${ACCESS_TOKEN}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-          }
-        );
+        const response = await fetch(`https://graph.facebook.com/v18.0/${PIXEL_ID}/events?access_token=${ACCESS_TOKEN}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
 
         const json = await response.json();
         if (json.events_received) {
