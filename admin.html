@@ -8,8 +8,8 @@
 <body style="font-family:Arial; margin:40px;">
   <h2>Registrar compra manual</h2>
 
-  <label>Código del cliente (lead_id):</label><br/>
-  <input id="click_id" placeholder="Ej: N7XXA" style="width:200px;"/><br/><br/>
+  <label>Click ID:</label><br/>
+  <input id="click_id" placeholder="Ej: SD6EK" style="width:200px;"/><br/><br/>
 
   <label>Teléfono del comprador (sin +):</label><br/>
   <input id="phone" placeholder="549XXXXXXXXXX" style="width:200px;"/><br/><br/>
@@ -19,61 +19,39 @@
 
   <button id="send" style="padding:10px 20px;">Enviar a Meta</button>
 
-  <p id="status" style="font-weight:bold;"></p>
+  <p id="status"></p>
 
   <script>
-    const ACCESS_TOKEN = "TU_TOKEN_DE_ACCESO_DE_META"; // 👈 tu token real aquí
+    // 🔑 CONFIGURACIÓN BÁSICA
+    const ACCESS_TOKEN = "TU_TOKEN_DE_ACCESO_DE_META"; // reemplazá con tu token real
     const PIXEL_ID = "1946841772846486";
-    const SHEET_URL = "https://script.google.com/macros/s/AKfycbwyADs1Mu32qEnFhwV4ySNK6Uaa3WzaCkDU_o3xFnhgMvXxvZcE3Pps6EGRguwyFhqq/exec"; // misma URL del index
 
-    document.getElementById('send').addEventListener('click', async () => {
-      const click_id = document.getElementById('click_id').value.trim();
-      const phone = document.getElementById('phone').value.trim();
-      const value = parseFloat(document.getElementById('value').value.trim());
-      const status = document.getElementById('status');
+    // 🧠 MODO MANUAL DE PRUEBA
+    // Copiá estos valores desde tu Google Sheet para cada test
+    const fbp = "fb.2.1762644068517.778233856327572830"; // valor tomado del sheet
+    const fbc = ""; // si en el sheet aparece vacío, dejalo así
+    const event_id = "contact-SD6EK"; // valor tomado del sheet
+
+    document.getElementById("send").addEventListener("click", async () => {
+      const click_id = document.getElementById("click_id").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const value = parseFloat(document.getElementById("value").value.trim());
+      const status = document.getElementById("status");
 
       if (!click_id || !phone || !value) {
         status.textContent = "⚠️ Completa todos los campos.";
-        status.style.color = "orange";
         return;
       }
 
-      status.textContent = "🔎 Buscando datos en la hoja...";
-      status.style.color = "white";
+      status.textContent = "Enviando datos a Meta...";
 
       try {
-        // ✅ 1. Obtener todos los datos de la hoja como texto
-        const res = await fetch(SHEET_URL);
-        const text = await res.text();
-
-        // ✅ 2. Buscar la fila correspondiente al click_id (lead_id)
-        const line = text.split('\n').find(row => row.includes(click_id));
-        if (!line) {
-          status.textContent = "❌ No se encontró el código en la hoja.";
-          status.style.color = "red";
-          return;
-        }
-
-        // ✅ 3. Parsear los valores correctamente
-        // Estructura esperada en la hoja:
-        // timestamp | lead_id | fbp | fbc | event_id | name | phone
-        const cols = line.split(',');
-        const fbp = cols[2]?.trim() || "";
-        const fbc = cols[3]?.trim() || "";
-        const event_id = cols[4]?.trim() || "";
-
-        if (!fbp && !fbc) {
-          status.textContent = "⚠️ No se encontraron fbp/fbc en la hoja.";
-          status.style.color = "orange";
-          return;
-        }
-
-        // ✅ 4. Crear el payload para Meta CAPI
+        // 📦 Construir payload
         const payload = {
           data: [{
             event_name: "Purchase",
             event_time: Math.floor(Date.now() / 1000),
-            event_id: event_id || ("purchase-" + click_id),
+            event_id: event_id, // el mismo que guardaste desde el click
             user_data: {
               ph: phone,
               fbp: fbp,
@@ -86,7 +64,7 @@
           }]
         };
 
-        // ✅ 5. Enviar evento a Meta
+        // 🚀 Enviar a Meta CAPI
         const response = await fetch(`https://graph.facebook.com/v18.0/${PIXEL_ID}/events?access_token=${ACCESS_TOKEN}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -94,20 +72,15 @@
         });
 
         const json = await response.json();
-        console.log("Meta Response:", json);
 
         if (json.events_received) {
           status.textContent = "✅ Compra registrada correctamente en Meta.";
-          status.style.color = "#00ff88";
         } else {
           status.textContent = "⚠️ Error al enviar a Meta: " + JSON.stringify(json);
-          status.style.color = "orange";
         }
 
       } catch (err) {
-        console.error(err);
-        status.textContent = "❌ Error de conexión o lectura: " + err.message;
-        status.style.color = "red";
+        status.textContent = "❌ Error: " + err.message;
       }
     });
   </script>
